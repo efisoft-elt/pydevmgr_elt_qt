@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pydevmgr-elt-qt"
+version = "0.6.a0"
+description = "Qt Widget for pydevmgr_elt devices and manager"
+authors = ["Sylvain Guieu <sylvain.guieu@univ-grenoble-alpes.fr>"]
+readme = "README.md"
+packages = [{include = "pydevmgr_elt_qt"}]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+pydevmgr-qt = {path = "../pydevmgr_qt", develop=true}
+PyQt5 = "^5.15.7"
+pydevmgr-elt = {path = "../pydevmgr_elt", develop=true}
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

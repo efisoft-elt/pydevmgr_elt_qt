@@ -1,4 +1,4 @@
-# from .line import MotorLine
-from .ctrl import MotorCtrl
-# from .cfg import MotorCfg
+from .actions import MoveAbs, MoveRel, MoveVel, Move, MoveByName, MotorCommands 
+from .ctrl import QtMotorCtrl 
+from .line import QtMotorLine
 

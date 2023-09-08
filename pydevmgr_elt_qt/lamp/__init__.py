@@ -1,3 +1,4 @@
-from .line import LampLine
-from .ctrl import LampCtrl
+from .actions import SwitchOn, SwitchOff 
+from .ctrl import QtLampCtrl 
+from .line import QtLampLine 
 

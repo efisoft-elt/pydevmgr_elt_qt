@@ -1,2 +1,3 @@
-from .ctrl import ShutterCtrl
-from .line import ShutterLine 
+from .ctrl import QtShutterCtrl
+from .line import QtShutterLine 
+from .actions import Close, Open  

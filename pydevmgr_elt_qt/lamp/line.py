@@ -1,115 +1,34 @@
 
-from dataclasses import dataclass
-from enum import Enum, IntEnum
-from typing import Callable
-from PyQt5.QtWidgets import QFrame, QLabel, QLineEdit
-from pydantic.fields import Field
-from pydevmgr_core.base.node_alias import NodeAlias
-
+from PyQt5 import uic
+from PyQt5.QtWidgets import QFrame
 from pydevmgr_elt import Lamp
+from pydevmgr_elt_qt.device.line import QtEltDeviceLine
+from pydevmgr_elt_qt.lamp.actions import LampCommands 
+from pydevmgr_qt.api import QtNodeFactory, register_qt_handler
+import pkg_resources, os
 
 
-from PyQt5 import uic, QtWidgets
-from pydevmgr_core_qt import  (Action, get_setter_class, record_qt)
-from pydevmgr_core import NodeVar
-from pydevmgr_elt_qt.io import find_ui
-import pydevmgr_elt_qt.device.line as base 
-
-Base = base.EltDeviceLine
-Device = Lamp
-
-
-class ActionMenuName(str, Enum):
-    ON = "ON"
-    OFF = "OFF"
-    # more action menu related to the device 
-
-##############################################################
-
-class Widget(base.Widget):
-    time_left: QLabel
-    input_intensity: QLineEdit
-    input_time: QLineEdit
-
+class Widget(QFrame):
     def __init__(self,*args, **kwargs):
         QFrame.__init__(self, *args, **kwargs)
-        uic.loadUi(find_ui('lamp_line_frame.ui'), self) 
+        file = os.path.join("lamp", "uis", "lamp_line_frame.ui")
+        uic.loadUi(pkg_resources.resource_filename("pydevmgr_elt_qt",file), self)
 
-class Proc(base.Proc):
-    time_setter   = get_setter_class(QtWidgets.QLabel, float)(format="%.0f")
-    intensity_setter = get_setter_class(QtWidgets.QLabel, float)(format="%.1f")
-   
+Base = QtEltDeviceLine
+QNF = QtNodeFactory 
 
-class Data(base.Data):
-    class Stat(base.Data.Stat):
-        time_left: NodeVar[float] = 0.0
-        intensity: NodeVar[float] = 0.0
-    
-    stat: Stat = Stat()
-
-
-@dataclass
-class Args(base.Args):
-    time: Callable = None
-
-@dataclass
-class Actions(base.Actions):
-    ...
-
-##############################################################  
-
-
-        
-def set_widget(widget: Widget, device: Device) -> None:
-    base.set_widget(widget, device)
-     
-    Proc.intensity_setter.set(widget.input_intensity, 1.0)
-    Proc.time_setter.set(widget.input_time, 10.0)    
-    wa = widget.state_action
-    wa.insertSeparator(wa.count()) 
-    wa.addItems( ActionMenuName )
-
-def update_data(w: Widget, data: Data) -> None:
-    base.update_data(w,data)
-    s = data.stat
-    Proc.time_setter.set( w.time_left, s.time_left)
-   
-
-def set_args(args: Args, widget: Widget)-> Args:
-    base.set_args(args, widget)
-    args.intensity = lambda: Proc.float_getter.get(widget.input_intensity)
-    args.time = lambda: Proc.float_getter.get(widget.input_time)
-
-
-def set_actions(actions: Actions, device: Device, args: Args)-> Actions:
-    base.set_actions(actions, device, args)
-    feedback = args.feedback
-    command = actions.command
-    command.add_action( ActionMenuName.ON, Action(device.switch_on, [args.intensity, args.time], feedback))
-    command.add_action( ActionMenuName.OFF, Action(device.switch_off, [], feedback))
- 
-    
-connect_action = base.connect_action 
-disconnect_action = base.disconnect_action 
-
-
-##############################################################  
-
-@record_qt(Lamp, "line")
-class LampLine(Base):
+@register_qt_handler(Lamp,"line")
+class QtLampLine(Base):
     Widget = Widget
-        
-    class Monitor(Base.Monitor):
-        Data = Data
-        _update_data = staticmethod(update_data)
+    class Stat(Base.Stat):
+        time_left= QNF(vtype=float, widget="time_left")
+    stat = Stat.Config(pair="stat", implicit_pairing=True)
+    switch = LampCommands.Config(actioner="state_action", feedback = Base.feedback)
 
-    class Connector(Base.Connector):
-        Args = Args
-        Actions = Actions 
-        
-        _set_widget        = staticmethod(set_widget)
-        _set_args          = staticmethod(set_args)
-        _set_actions       = staticmethod(set_actions)
-        _connect_action    = staticmethod(connect_action)
-        _disconnect_action = staticmethod(disconnect_action)
 
+if __name__ == "__main__":
+    from pydevmgr_elt_qt.shared import test_widget 
+    from pydevmgr_elt import open_elt_device 
+    lamp =  open_elt_device("tins/lamp1.yml(lamp1)")
+    test_widget( QtLampLine, lamp)
+     
